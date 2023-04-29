@@ -16,6 +16,7 @@ from bezier_curve import (
     curve_names,
 )
 from canvas_point import P, CanvasPoint, DEFAULT_POINT_DIAMETER
+import projects_manager
 from color_changer import ColorChanger
 
 
@@ -291,13 +292,6 @@ class MainFrame(tk.Frame):
         )
 
         # Enable saving
-        self.save_project_button = tk.Button(
-            self.saving_management_frame,
-            text="Save Project",
-            command=self.save_project,
-            width=self.side_panel_width,
-        )
-
         self.save_as_label = tk.Label(self.saving_management_frame, text="Save As:")
 
         self.save_as_entry = tk.Entry(
@@ -310,29 +304,45 @@ class MainFrame(tk.Frame):
 
         self.save_info_label = tk.Label(self.saving_management_frame)
 
+        self.save_project_button = tk.Button(
+            self.saving_management_frame,
+            text="Save Project",
+            command=lambda: projects_manager.save_project(
+                self.projects_listbox,
+                self.save_as_entry,
+                self.save_info_label,
+                self.get_active_image_filename,
+                self.get_list_of_curves,
+            ),
+            width=self.side_panel_width,
+        )
+
         self.load_project_button = tk.Button(
             self.saving_management_frame,
             text="Load Project",
-            command=self.load_project,
+            command=lambda: projects_manager.load_project(
+                self.projects_listbox,
+                self.save_as_entry,
+                self.save_info_label,
+                self.remove_everything,
+                self.display_new_image,
+                self.new_curve,
+            ),
             width=self.side_panel_width,
         )
 
         self.delete_project_button = tk.Button(
             self.saving_management_frame,
             text="Delete Project",
-            command=self.delete_project,
+            command=lambda: projects_manager.delete_project(
+                self.projects_listbox, self.save_as_entry, self.save_info_label
+            ),
             width=self.side_panel_width,
         )
 
-        # Recognize save files
-        try:
-            for filename in listdir(str(Path(root_path, "./saves/").resolve())):
-                if filename.endswith(".txt"):
-                    self.projects_listbox.insert(tk.END, os_path.splitext(filename)[0])
-        except:
-            self.save_info_label.config(
-                text="Error while importing projects!", fg="red"
-            )
+        projects_manager.recognize_save_files(
+            self.projects_listbox, self.save_info_label
+        )
 
     # Define function that executes every time user selects a different curve
     def handle_curve_select(self, event) -> None:
@@ -397,6 +407,12 @@ class MainFrame(tk.Frame):
 
     def get_selected_curve(self) -> BezierCurve | None:
         return self.selected_curve
+
+    def get_active_image_filename(self) -> str | None:
+        return self.image_filename
+
+    def get_list_of_curves(self) -> List[BezierCurve]:
+        return self.curves
 
     # Define function for creating points on canvas
     def new_canvas_points(self, points_coords: List[P]) -> List[CanvasPoint]:
@@ -886,160 +902,15 @@ class MainFrame(tk.Frame):
         self.x_equation_text.config(bg="#a8a8a8")
         self.y_equation_text.config(bg="#a8a8a8")
 
-    def find_selected_project_filename(self) -> str | None:
-        selected_projects = self.projects_listbox.curselection()
+    def remove_everything(self):
+        self.remove_image()
 
-        if len(selected_projects) > 0:
-            project_name = self.projects_listbox.get(selected_projects[0])
+        self.selected_curve = None
 
-            selected_project_filename = str(
-                Path(root_path, f"./saves/{project_name}.txt").resolve()
-            )  # we can use only the first one selected because only one can be selected
+        for i in range(len(self.curves)):
+            self.curves_listbox.selection_set(tk.END)
 
-            return selected_project_filename
-        else:
-            return None
-
-    def save_project(self) -> None:
-        name_chosen_by_user: str = self.save_as_entry.get()
-
-        if len(self.curves) > 0:
-            if len(name_chosen_by_user) > 0 and not name_chosen_by_user.isspace():
-                if name_chosen_by_user not in self.projects_listbox.get(0, tk.END):
-                    name_of_project: str = name_chosen_by_user.strip()
-                    name_of_project = name_of_project.lower()
-                    name_of_project = name_of_project.replace(" ", "_")
-
-                    imported_image_filename: str | None = None
-
-                    if self.image_filename is not None:
-                        imported_image_filename = self.image_filename
-
-                    try:
-                        with open(
-                            str(
-                                Path(
-                                    root_path, f"./saves/{name_of_project}.txt"
-                                ).resolve()
-                            ),
-                            "w",
-                        ) as f:
-                            f.write(name_of_project + "\n")
-
-                            if imported_image_filename is not None:
-                                f.write(imported_image_filename + "\n")
-                            else:
-                                f.write("\n")
-
-                            for curve in self.curves:
-                                points_seq: str = ""
-
-                                for point in curve.points:
-                                    points_seq += f"{point.point_coords[0]},{point.point_coords[1]};"
-
-                                points_seq = points_seq.rstrip(";")
-
-                                points_seq += "\n"
-
-                                f.write(points_seq)
-
-                        self.projects_listbox.insert(tk.END, name_of_project)
-
-                        self.save_as_entry.delete(0, tk.END)
-
-                        self.save_info_label.config(
-                            text="Project saved successfully!", fg="green"
-                        )
-                    except:
-                        self.save_info_label.config(
-                            text="Error while creating file!", fg="red"
-                        )
-                else:
-                    self.save_info_label.config(
-                        text="Project name already exists!", fg="orange"
-                    )
-            else:
-                self.save_info_label.config(text="Project has no name!", fg="orange")
-        else:
-            self.save_info_label.config(text="Project has no curves!", fg="orange")
-
-    def load_project(self) -> None:
-        selected_project_filename = self.find_selected_project_filename()
-
-        if selected_project_filename is not None:
-            img_filename: str | None = None
-
-            all_curve_point_seqs: List[str] = []
-
-            try:
-                with open(selected_project_filename, "r") as f:
-                    lines = f.readlines()
-
-                    lines = [line.strip().rstrip("\n") for line in lines]
-                    
-                    _img_filename = lines[1]
-
-                    if len(_img_filename) > 0:
-                        img_filename = _img_filename
-
-                    all_curve_point_seqs = lines[2:]
-            except:
-                self.save_info_label.config(text="Error while loading file!", fg="red")
-            else:
-                # Remove everything
-                self.remove_image()
-
-                self.selected_curve = None
-
-                for i in range(len(self.curves)):
-                    self.curves_listbox.selection_set(tk.END)
-
-                    self.delete_selected_curve()
-
-                # Load project
-                if img_filename is not None:
-                    self.display_new_image(img_filename)
-
-                for point_seq in all_curve_point_seqs:
-                    all_points = point_seq.split(";")
-
-                    points: List[P] = []
-
-                    for point in all_points:
-                        xy = point.split(",")
-
-                        x = int(xy[0])
-                        y = int(xy[1])
-
-                        points.append((x, y))
-
-                    self.new_curve(len(all_points), points)
-
-                self.save_info_label.config(
-                    text="Project loaded successfully!", fg="green"
-                )
-
-                self.save_as_entry.delete(0, tk.END)
-        else:
-            self.save_info_label.config(text="No project selected!", fg="orange")
-
-    def delete_project(self) -> None:
-        selected_project_filename = self.find_selected_project_filename()
-
-        if selected_project_filename is not None:
-            try:
-                remove(selected_project_filename)
-            except:
-                self.save_info_label.config(
-                    text="Error while deleting project!", fg="red"
-                )
-            else:
-                self.projects_listbox.delete(self.projects_listbox.curselection()[0])
-                self.save_info_label.config(
-                    text="Project deleted successfully!", fg="green"
-                )
-
-            self.save_as_entry.delete(0, tk.END)
+            self.delete_selected_curve()
 
     def grid_widgets(self) -> None:
         # MAIN GRID
