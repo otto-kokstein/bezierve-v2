@@ -17,6 +17,7 @@ from bezier_curve import (
 )
 from canvas_point import P, CanvasPoint, DEFAULT_POINT_DIAMETER
 import projects_manager
+from image_manager import ImageManager
 from color_changer import ColorChanger
 
 
@@ -265,18 +266,14 @@ class MainFrame(tk.Frame):
             state=tk.DISABLED,
         )
 
-        self.image_filename: str | None = None
-
-        self.image: ImageTk.PhotoImage | None = None
-
-        self.canvas_image: int | None = None
+        self.image_manager = ImageManager(self.canvas, CANVAS_SIZE)
 
         self.import_image_button = tk.Button(
-            self.image_options_frame, text="Import Image", command=self.import_image
+            self.image_options_frame, text="Import Image", command=self.image_manager.import_image
         )
 
         self.remove_image_button = tk.Button(
-            self.image_options_frame, text="Remove Image", command=self.remove_image
+            self.image_options_frame, text="Remove Image", command=self.image_manager.remove_image
         )
 
         self.show_bounding_box_var: tk.IntVar = tk.IntVar(value=0)
@@ -311,7 +308,7 @@ class MainFrame(tk.Frame):
                 self.projects_listbox,
                 self.save_as_entry,
                 self.save_info_label,
-                self.get_active_image_filename,
+                self.image_manager.get_active_image_filename,
                 self.get_list_of_curves,
             ),
             width=self.side_panel_width,
@@ -325,7 +322,7 @@ class MainFrame(tk.Frame):
                 self.save_as_entry,
                 self.save_info_label,
                 self.remove_everything,
-                self.display_new_image,
+                self.image_manager.display_new_image,
                 self.new_curve,
             ),
             width=self.side_panel_width,
@@ -407,9 +404,6 @@ class MainFrame(tk.Frame):
 
     def get_selected_curve(self) -> BezierCurve | None:
         return self.selected_curve
-
-    def get_active_image_filename(self) -> str | None:
-        return self.image_filename
 
     def get_list_of_curves(self) -> List[BezierCurve]:
         return self.curves
@@ -769,81 +763,8 @@ class MainFrame(tk.Frame):
 
             self.selected_curve.draw(self.canvas)
 
-    def remove_image(self) -> None:
-        if self.image_filename is not None:
-            self.image_filename = None
-        if self.image is not None:
-            self.image = None
-        if self.canvas_image is not None:
-            self.canvas.delete(self.canvas_image)
-
-    def display_new_image(self, filename: str) -> None:
-        # Delete the old images
-        self.remove_image()
-
-        # Load new image
-        self.image_filename = filename
-
-        raw_image = Image.open(self.image_filename)
-
-        # Rescale the image so that it fits on the canvas
-        new_image_size: Tuple[int, int] = (0, 0)
-
-        if raw_image.width == raw_image.height:
-            smaller_canvas_side = min(CANVAS_WIDTH, CANVAS_HEIGHT)
-
-            new_image_size = (smaller_canvas_side, smaller_canvas_side)
-
-        elif raw_image.width > raw_image.height:
-            new_image_size = (
-                CANVAS_WIDTH,
-                round(raw_image.height * (CANVAS_WIDTH / raw_image.width)),
-            )
-
-        else:
-            new_image_size = (
-                round(raw_image.width * (CANVAS_HEIGHT / raw_image.height)),
-                CANVAS_HEIGHT,
-            )
-
-        raw_image = raw_image.resize(new_image_size)
-
-        # Calculate position where image's NW corner will be placed on canvas
-        image_pos_on_canvas: Tuple[int, int] = (
-            round((CANVAS_WIDTH - raw_image.width) / 2),
-            round((CANVAS_HEIGHT - raw_image.height) / 2),
-        )
-
-        # Convert the image so that Tkinter can work with it
-        self.image = ImageTk.PhotoImage(raw_image)
-
-        # Apply the image
-        self.canvas_image = self.canvas.create_image(
-            image_pos_on_canvas,
-            anchor=tk.NW,
-            image=self.image,
-        )
-
-        self.canvas.tag_lower(self.canvas_image)
-
-    def import_image(self) -> None:
-        filetypes = (("Accepted image files", ["*.png", "*.jpg"]),)
-
-        filename = filedialog.askopenfilename(
-            title="Import Image", initialdir=root_path, filetypes=filetypes
-        )
-
-        try:
-            Image.open(
-                filename
-            )  # Try to see if it fails (I don't know what it returns when user chooses nothing)
-        except AttributeError:
-            pass
-        else:
-            self.display_new_image(filename)
-
     def remove_everything(self):
-        self.remove_image()
+        self.image_manager.remove_image()
 
         self.selected_curve = None
 
