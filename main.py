@@ -975,16 +975,14 @@ class MainFrame(tk.Frame):
                 with open(selected_project_filename, "r") as f:
                     lines = f.readlines()
 
+                    lines = [line.strip().rstrip("\n") for line in lines]
+                    
                     _img_filename = lines[1]
-
-                    _img_filename = _img_filename.strip().rstrip("\n")
 
                     if len(_img_filename) > 0:
                         img_filename = _img_filename
 
-                    for i in range(len(lines)):
-                        if i > 1 and i < len(lines):
-                            all_curve_point_seqs.append(lines[i].strip().rstrip("\n"))
+                    all_curve_point_seqs = lines[2:]
             except:
                 self.save_info_label.config(text="Error while loading file!", fg="red")
             else:
