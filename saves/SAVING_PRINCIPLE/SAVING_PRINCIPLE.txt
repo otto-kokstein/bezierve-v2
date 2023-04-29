@@ -1,0 +1,5 @@
+NAME_OF_PROJECT
+IMPORTED_IMAGE_PATH
+x,y;x,y;x,y (example - quadratic)
+(this repeats n times, where n is the amount of curves)
+(so every project save file has 2 + n lines)
