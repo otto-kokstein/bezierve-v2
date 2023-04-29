@@ -18,7 +18,7 @@ from image_manager import ImageManager
 from color_changer import ColorChanger
 
 
-# Get current directory
+# Obtain path to icon
 absolute_path_to_icon = str(Path(root_path, "./bezierve_icon_2.ico").resolve())
 
 
