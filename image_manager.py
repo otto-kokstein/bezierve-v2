@@ -1,11 +1,7 @@
 from ROOT_PATH import root_path
-from pathlib import Path
-from os import remove, listdir, path as os_path
-from tkinter import Canvas, Listbox, Entry, Label, END, NW, filedialog
-from typing import Tuple, List, Callable
+from tkinter import Canvas, NW, filedialog
+from typing import Tuple, Callable
 from PIL import Image, ImageTk
-from bezier_curve import BezierCurve
-from canvas_point import P
 
 
 class ImageManager:

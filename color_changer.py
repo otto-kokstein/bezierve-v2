@@ -11,7 +11,7 @@ class ColorChanger:
         default_color: str,
         title: str,
         get_selected_curve_func: Callable[[], BezierCurve | None],
-        change_color_func: Callable[[str], None]
+        change_color_func: Callable[[str], None],
     ) -> None:
         self.default_color = default_color
         self.title = title
@@ -24,13 +24,9 @@ class ColorChanger:
             width=5,
         )
 
-        self.indicator = tk.Canvas(
-            parent_frame, width=32, height=15, bg=default_color
-        )
+        self.indicator = tk.Canvas(parent_frame, width=32, height=15, bg=default_color)
 
-        self.indicator.place(
-            in_=self.button, relx=0.5, rely=0.5, anchor=tk.CENTER
-        )
+        self.indicator.place(in_=self.button, relx=0.5, rely=0.5, anchor=tk.CENTER)
 
         self.indicator.bind("<Button-1>", lambda event: self.button.invoke())
 
@@ -40,9 +36,7 @@ class ColorChanger:
         selected_curve = self.get_selected_curve_func()
 
         if selected_curve is not None:
-            new_color = self.prompt_color_change(
-                initial_color=self.default_color
-            )
+            new_color = self.prompt_color_change(initial_color=self.default_color)
 
             if new_color is not None:
                 self.change_color_func(new_color)

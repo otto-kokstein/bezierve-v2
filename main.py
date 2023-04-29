@@ -1,9 +1,6 @@
 from ROOT_PATH import root_path
-from os import listdir, remove, path as os_path
 import tkinter as tk
-from tkinter import filedialog
 from pathlib import Path
-from PIL import Image, ImageTk
 from typing import List, Tuple, Dict
 from bezier_curve import (
     BezierCurve,
@@ -269,11 +266,15 @@ class MainFrame(tk.Frame):
         self.image_manager = ImageManager(self.canvas, CANVAS_SIZE)
 
         self.import_image_button = tk.Button(
-            self.image_options_frame, text="Import Image", command=self.image_manager.import_image
+            self.image_options_frame,
+            text="Import Image",
+            command=self.image_manager.import_image,
         )
 
         self.remove_image_button = tk.Button(
-            self.image_options_frame, text="Remove Image", command=self.image_manager.remove_image
+            self.image_options_frame,
+            text="Remove Image",
+            command=self.image_manager.remove_image,
         )
 
         self.show_bounding_box_var: tk.IntVar = tk.IntVar(value=0)

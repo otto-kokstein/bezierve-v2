@@ -1,6 +1,6 @@
-from typing import List, Tuple, TypeAlias, Dict
+from typing import List, Tuple, Dict
 from canvas_point import P, CanvasPoint, DEFAULT_POINT_SMALLER_DIAMETER
-from tkinter import Canvas, TclError, NORMAL
+from tkinter import Canvas
 from math import sqrt
 
 
@@ -133,7 +133,12 @@ class BezierCurve:
     def create_extremum_point(self, canvas, extremum: float, color: str):
         extremum_coords = self.calculate_curve_point(extremum)
 
-        point = CanvasPoint(extremum_coords, canvas, color, point_diameter=DEFAULT_POINT_SMALLER_DIAMETER)
+        point = CanvasPoint(
+            extremum_coords,
+            canvas,
+            color,
+            point_diameter=DEFAULT_POINT_SMALLER_DIAMETER,
+        )
 
         self.extremum_points.append(point)
 
@@ -142,8 +147,12 @@ class BezierCurve:
         point_y = 0.0
 
         if len(self.points) == 2:
-            point_x = (1 - t) * self.points[0].point_coords[0] + t * self.points[1].point_coords[0]
-            point_y = (1 - t) * self.points[0].point_coords[1] + t * self.points[1].point_coords[1]
+            point_x = (1 - t) * self.points[0].point_coords[0] + t * self.points[
+                1
+            ].point_coords[0]
+            point_y = (1 - t) * self.points[0].point_coords[1] + t * self.points[
+                1
+            ].point_coords[1]
 
         elif len(self.points) == 3:
             point_x = (1 - t) * (
@@ -388,7 +397,9 @@ class BezierCurve:
 
         bbox_corners = [left_top, right_top, right_bottom, left_bottom, left_top]
 
-        self.bounding_box_canvas_line = canvas.create_line(bbox_corners, fill=self.color, dash=(4, 4, 1, 4))
+        self.bounding_box_canvas_line = canvas.create_line(
+            bbox_corners, fill=self.color, dash=(4, 4, 1, 4)
+        )
 
     def change_curve_color(self, canvas: Canvas, new_color_code: str) -> None:
         self.color = new_color_code

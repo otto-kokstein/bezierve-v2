@@ -1,4 +1,4 @@
-from typing import List, Tuple, TypeAlias
+from typing import Tuple, TypeAlias
 from tkinter import Canvas
 
 
@@ -11,7 +11,11 @@ DEFAULT_POINT_SMALLER_DIAMETER = 8
 
 class CanvasPoint:
     def __init__(
-        self, point_coords: P, canvas: Canvas, color: str, point_diameter: int = DEFAULT_POINT_DIAMETER,
+        self,
+        point_coords: P,
+        canvas: Canvas,
+        color: str,
+        point_diameter: int = DEFAULT_POINT_DIAMETER,
     ) -> None:
         self.point_diameter: int = point_diameter
         self.point_coords: P = point_coords
@@ -25,11 +29,11 @@ class CanvasPoint:
             self.point_coords[1] - self.point_diameter / 2,
             self.point_coords[0] + self.point_diameter / 2,
             self.point_coords[1] + self.point_diameter / 2,
-            fill=self.color
+            fill=self.color,
         )
 
         return point
-    
+
     def reset_canvas_point(self) -> None:
         self.canvas.delete(self.point)
         self.point = self.create_canvas_point()
