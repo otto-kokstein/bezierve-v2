@@ -141,7 +141,11 @@ class BezierCurve:
         point_x = 0.0
         point_y = 0.0
 
-        if len(self.points) == 3:
+        if len(self.points) == 2:
+            point_x = (1 - t) * self.points[0].point_coords[0] + t * self.points[1].point_coords[0]
+            point_y = (1 - t) * self.points[0].point_coords[1] + t * self.points[1].point_coords[1]
+
+        elif len(self.points) == 3:
             point_x = (1 - t) * (
                 (1 - t) * self.points[0].point_coords[0]
                 + t * self.points[1].point_coords[0]
