@@ -842,66 +842,6 @@ class MainFrame(tk.Frame):
         else:
             self.display_new_image(filename)
 
-    # Define function for setting the app into dark mode (not recommended)
-    def darken_window(self) -> None:
-        self.config(bg="#333")
-        self.curves_management_frame.config(bg="#333")
-        self.bottom_panel_frame.config(bg="#333")
-        self.canvas_frame.config(bg="#333")
-        self.curve_appearance_frame.config(bg="#333")
-        self.curve_equations_options_frame.config(bg="#333")
-        self.curve_show_toggle_options_frame.config(bg="#333")
-        self.image_options_frame.config(bg="#333")
-
-        self.new_linear_button.config(bg="#307cab", fg="#fff")
-        self.new_quadratic_button.config(bg="#307cab", fg="#fff")
-        self.new_cubic_button.config(bg="#307cab", fg="#fff")
-        self.delete_curve_button.config(bg="#307cab", fg="#fff")
-        self.reset_points_button.config(bg="#307cab", fg="#fff")
-        self.copy_equations_button.config(bg="#307cab", fg="#fff")
-        self.substitute_extrema_button.config(bg="#307cab", fg="#fff")
-        self.import_image_button.config(bg="#307cab", fg="#fff")
-        self.remove_image_button.config(bg="#307cab", fg="#fff")
-        self.curve_color_changer.button.config(bg="#444", fg="#fff")
-        self.endpoints_color_changer.button.config(bg="#444", fg="#fff")
-        self.control_points_color_changer.button.config(bg="#444", fg="#fff")
-        self.x_extremum_points_color_changer.button.config(bg="#444", fg="#fff")
-        self.y_extremum_points_color_changer.button.config(bg="#444", fg="#fff")
-
-        self.curves_listbox.config(bg="#333", fg="#fff", highlightthickness=0)
-
-        self.canvas.config(bg="#a8a8a8")
-
-        self.curve_width_slider.config(bg="#333", fg="#fff", highlightthickness=0)
-
-        self.show_dashed_line_checkbutton.config(
-            bg="#333", fg="#fff", highlightthickness=0
-        )
-        self.show_extremum_points_checkbutton.config(
-            bg="#333", fg="#fff", highlightthickness=0
-        )
-        self.show_bounding_box_checkbutton.config(
-            bg="#333", fg="#fff", highlightthickness=0
-        )
-
-        self.x_extrema_label.config(bg="#333", fg="#fff", highlightthickness=0)
-        self.y_extrema_label.config(bg="#333", fg="#fff", highlightthickness=0)
-        self.curve_width_label.config(bg="#333", fg="#fff")
-        self.curve_color_changer.label.config(bg="#333", fg="#fff")
-        self.endpoints_color_changer.label.config(bg="#333", fg="#fff")
-        self.control_points_color_changer.label.config(bg="#333", fg="#fff")
-        self.x_extremum_points_color_changer.label.config(bg="#333", fg="#fff")
-        self.y_extremum_points_color_changer.label.config(bg="#333", fg="#fff")
-
-        self.curve_color_changer.indicator.config(highlightthickness=0)
-        self.endpoints_color_changer.indicator.config(highlightthickness=0)
-        self.control_points_color_changer.indicator.config(highlightthickness=0)
-        self.x_extremum_points_color_changer.indicator.config(highlightthickness=0)
-        self.y_extremum_points_color_changer.indicator.config(highlightthickness=0)
-
-        self.x_equation_text.config(bg="#a8a8a8")
-        self.y_equation_text.config(bg="#a8a8a8")
-
     def remove_everything(self):
         self.remove_image()
 
@@ -1092,7 +1032,6 @@ class App(tk.Tk):
 
     def create_widgets(self) -> None:
         frame = MainFrame(self)
-        # frame.darken_window()
         frame.grid_widgets()
         frame.grid(column=0, row=0)
 
