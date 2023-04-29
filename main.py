@@ -1,7 +1,7 @@
 from ROOT_PATH import root_path
 from os import listdir, remove, path as os_path
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import filedialog
 from pathlib import Path
 from PIL import Image, ImageTk
 from typing import List, Tuple, Dict
