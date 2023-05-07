@@ -419,10 +419,6 @@ class BezierCurve:
             canvas.itemconfig(point.point, fill=new_color_code)
         self.control_points_color = new_color_code
 
-    def change_curve_width(self, canvas: Canvas, new_width: int) -> None:
-        self.width = new_width
-        self.draw(canvas)
-
     def substitute_extremum_for_t(self, canvas: Canvas) -> None:
         if self.substituted_extremum is not None and len(self.all_extrema) > 0:
             self.substituted_equations = (

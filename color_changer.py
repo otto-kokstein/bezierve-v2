@@ -20,7 +20,7 @@ class ColorChanger:
 
         self.button = tk.Button(
             parent_frame,
-            command=self.change_color,
+            command=self.new_color,
             width=5,
         )
 
@@ -32,11 +32,14 @@ class ColorChanger:
 
         self.label = tk.Label(parent_frame, text=title)
 
-    def change_color(self) -> None:
+    def force_change_color(self, new_color: str) -> None:
+        self.indicator.config(bg=new_color)
+
+    def new_color(self) -> None:
         selected_curve = self.get_selected_curve_func()
 
         if selected_curve is not None:
-            new_color = self.prompt_color_change(initial_color=self.default_color)
+            new_color = self.prompt_color_change(initial_color=selected_curve.color)
 
             if new_color is not None:
                 self.change_color_func(new_color)
@@ -52,3 +55,6 @@ class ColorChanger:
             new_color_code = new_color[1]
 
             return new_color_code
+
+    def revert_original_color(self) -> None:
+        self.indicator.config(bg=self.default_color)

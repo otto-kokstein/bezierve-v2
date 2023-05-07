@@ -5,9 +5,8 @@ from PIL import Image, ImageTk
 
 
 class ImageManager:
-    def __init__(self, canvas: Canvas, canvas_size: Tuple[int, int]):
+    def __init__(self, canvas: Canvas):
         self.canvas = canvas
-        self.canvas_size = canvas_size
 
         self.image_filename: str | None = None
         self.image: ImageTk.PhotoImage | None = None
@@ -27,6 +26,8 @@ class ImageManager:
         self,
         filename: str,
     ) -> None:
+        canvas_size = (self.canvas.winfo_width(), self.canvas.winfo_height())
+
         # Delete the old image
         self.remove_image()
 
@@ -39,28 +40,28 @@ class ImageManager:
         new_image_size: Tuple[int, int] = (0, 0)
 
         if raw_image.width == raw_image.height:
-            smaller_canvas_side = min(self.canvas_size)
+            smaller_canvas_side = min(canvas_size)
 
             new_image_size = (smaller_canvas_side, smaller_canvas_side)
 
         elif raw_image.width > raw_image.height:
             new_image_size = (
-                self.canvas_size[0],
-                round(raw_image.height * (self.canvas_size[0] / raw_image.width)),
+                canvas_size[0],
+                round(raw_image.height * (canvas_size[0] / raw_image.width)),
             )
 
         else:
             new_image_size = (
-                round(raw_image.width * (self.canvas_size[1] / raw_image.height)),
-                self.canvas_size[1],
+                round(raw_image.width * (canvas_size[1] / raw_image.height)),
+                canvas_size[1],
             )
 
         raw_image = raw_image.resize(new_image_size)
 
         # Calculate position where image's NW corner will be placed on canvas
         image_pos_on_canvas: Tuple[int, int] = (
-            round((self.canvas_size[0] - raw_image.width) / 2),
-            round((self.canvas_size[1] - raw_image.height) / 2),
+            round((canvas_size[0] - raw_image.width) / 2),
+            round((canvas_size[1] - raw_image.height) / 2),
         )
 
         # Convert the image so that Tkinter can work with it

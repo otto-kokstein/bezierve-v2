@@ -15,7 +15,7 @@ def find_selected_project_filename(projects_listbox: Listbox) -> str | None:
 
         selected_project_filename = str(
             Path(root_path, f"./saves/{project_name}.txt").resolve()
-        )  # we can use only the first one selected because only one can be selected
+        )  # We can use only the first one selected because only one can be selected
 
         return selected_project_filename
     else:

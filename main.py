@@ -4,13 +4,13 @@ from pathlib import Path
 from typing import List, Tuple, Dict
 from bezier_curve import (
     BezierCurve,
-    DEFAULT_CURVE_WIDTH,
     DEFAULT_CURVE_COLOR,
     DEFAULT_ENDPOINT_COLOR,
     DEFAULT_CONTROL_POINT_COLOR,
     DEFAULT_X_EXTREMUM_COLOR,
     DEFAULT_Y_EXTREMUM_COLOR,
     curve_names,
+    InvalidPointAmoundError,
 )
 from canvas_point import P, CanvasPoint, DEFAULT_POINT_DIAMETER
 import projects_manager
@@ -22,33 +22,48 @@ from color_changer import ColorChanger
 absolute_path_to_icon = str(Path(root_path, "./bezierve_icon_2.ico").resolve())
 
 
-CANVAS_SIZE = CANVAS_WIDTH, CANVAS_HEIGHT = (1004, 600)
+def get_points_default_pos(
+    amount_of_points: int, canvas_width: int, canvas_height: int
+) -> List[P]:
+    half_canvas_width = round(canvas_width / 2)
 
-half_canvas_width = round(CANVAS_WIDTH / 2)
+    half_canvas_height = round(canvas_height / 2)
+    quarter_canvas_height = round(canvas_height / 4)
+    twelfth_canvas_height = round(canvas_height / 12)
 
-half_canvas_height = round(CANVAS_HEIGHT / 2)
-third_canvas_height = round(CANVAS_HEIGHT / 3)
-quarter_canvas_height = round(CANVAS_HEIGHT / 4)
-twelfth_canvas_height = round(CANVAS_HEIGHT / 12)
+    points: List[P] = []
 
-# Dict, in which you put the number of points your curve has and it outputs the positions of the points
-points_default_pos: Dict[int, List[Tuple[int, int]]] = {
-    2: [
-        (half_canvas_width, quarter_canvas_height),
-        (half_canvas_width, quarter_canvas_height * 3),
-    ],
-    3: [
-        (half_canvas_width, quarter_canvas_height),
-        (half_canvas_width, half_canvas_height),
-        (half_canvas_width, quarter_canvas_height * 3),
-    ],
-    4: [
-        (half_canvas_width, quarter_canvas_height),
-        (half_canvas_width, twelfth_canvas_height * 5),
-        (half_canvas_width, twelfth_canvas_height * 7),
-        (half_canvas_width, quarter_canvas_height * 3),
-    ],
-}
+    if amount_of_points == 2:
+        points.extend(
+            [
+                (half_canvas_width, quarter_canvas_height),
+                (half_canvas_width, quarter_canvas_height * 3),
+            ]
+        )
+
+    elif amount_of_points == 3:
+        points.extend(
+            [
+                (half_canvas_width, quarter_canvas_height),
+                (half_canvas_width, half_canvas_height),
+                (half_canvas_width, quarter_canvas_height * 3),
+            ]
+        )
+
+    elif amount_of_points == 4:
+        points.extend(
+            [
+                (half_canvas_width, quarter_canvas_height),
+                (half_canvas_width, twelfth_canvas_height * 5),
+                (half_canvas_width, twelfth_canvas_height * 7),
+                (half_canvas_width, quarter_canvas_height * 3),
+            ]
+        )
+
+    else:
+        raise InvalidPointAmoundError
+
+    return points
 
 
 class MainFrame(tk.Frame):
@@ -59,13 +74,16 @@ class MainFrame(tk.Frame):
         self.curves: List[BezierCurve] = []
 
         self.canvas_frame = tk.Frame(master=self)
-        self.curves_management_frame = tk.Frame(master=self)
+        self.right_panel_frame = tk.Frame(master=self)
         self.bottom_panel_frame = tk.Frame(master=self)
-        self.saving_management_frame = tk.Frame(master=self)
-        self.curve_appearance_frame = tk.Frame(master=self.curves_management_frame)
+        self.left_panel_frame = tk.Frame(master=self)
+        self.curves_management_frame = tk.Frame(master=self.right_panel_frame)
+        self.saving_management_frame = tk.Frame(master=self.left_panel_frame)
+        self.equations_frame = tk.Frame(master=self.bottom_panel_frame)
+        self.curve_appearance_frame = tk.Frame(master=self.right_panel_frame)
         self.curve_equations_options_frame = tk.Frame(master=self.bottom_panel_frame)
         self.curve_show_toggle_options_frame = tk.Frame(master=self.bottom_panel_frame)
-        self.image_options_frame = tk.Frame(master=self.bottom_panel_frame)
+        self.image_options_frame = tk.Frame(master=self.left_panel_frame)
 
         self.side_panel_width = 22
 
@@ -75,8 +93,6 @@ class MainFrame(tk.Frame):
 
         self.canvas = tk.Canvas(
             master=self.canvas_frame,
-            width=CANVAS_WIDTH,
-            height=CANVAS_HEIGHT,
             highlightthickness=2,
             highlightbackground="#0066cc",
         )
@@ -85,7 +101,7 @@ class MainFrame(tk.Frame):
         self.curves_listbox = tk.Listbox(
             self.curves_management_frame,
             width=self.side_panel_listbox_width,
-            height=20,
+            height=25,
         )
 
         # Create button for adding new curves
@@ -141,65 +157,13 @@ class MainFrame(tk.Frame):
             self.change_curve_color,
         )
 
-        self.endpoints_color_changer = ColorChanger(
-            self.curve_appearance_frame,
-            DEFAULT_ENDPOINT_COLOR,
-            "Endpoints Color",
-            self.get_selected_curve,
-            self.change_endpoints_color,
-        )
-
-        self.control_points_color_changer = ColorChanger(
-            self.curve_appearance_frame,
-            DEFAULT_CONTROL_POINT_COLOR,
-            "Control Points Color",
-            self.get_selected_curve,
-            self.change_control_points_color,
-        )
-
-        self.x_extremum_points_color_changer = ColorChanger(
-            self.curve_appearance_frame,
-            DEFAULT_X_EXTREMUM_COLOR,
-            "Extrema in X Color",
-            self.get_selected_curve,
-            self.change_x_extremum_points_color,
-        )
-
-        self.y_extremum_points_color_changer = ColorChanger(
-            self.curve_appearance_frame,
-            DEFAULT_Y_EXTREMUM_COLOR,
-            "Extrema in Y Color",
-            self.get_selected_curve,
-            self.change_y_extremum_points_color,
-        )
-
-        self.curve_width_label = tk.Label(
-            self.curve_appearance_frame, text="Curve Width:"
-        )
-        self.curve_width_controller: tk.IntVar = tk.IntVar(
-            value=3
-        )  # A variable used to change the selected curve's width (not the curve's actual width variable)
-        self.curve_width_slider = tk.Scale(
-            self.curve_appearance_frame,
-            variable=self.curve_width_controller,
-            from_=1,
-            to=DEFAULT_POINT_DIAMETER,
-            orient=tk.HORIZONTAL,
-            command=self.change_curve_width,
-            state=tk.DISABLED,
-        )
-
-        equation_text_width = 75
-
         self.x_equation_text = tk.Text(
-            self.bottom_panel_frame,
-            width=equation_text_width,
+            self.equations_frame,
             height=1,
             state=tk.DISABLED,
         )
         self.y_equation_text = tk.Text(
-            self.bottom_panel_frame,
-            width=equation_text_width,
+            self.equations_frame,
             height=1,
             state=tk.DISABLED,
         )
@@ -215,15 +179,13 @@ class MainFrame(tk.Frame):
         self.found_x_extrema_label_text = "Extremum in X at t = "
         self.found_y_extrema_label_text = "Extremum in Y at t = "
         self.x_extrema_label = tk.Label(
-            self.bottom_panel_frame,
+            self.equations_frame,
             text=self.not_found_x_extrema_label_text,
-            width=25,
             anchor=tk.W,
         )
         self.y_extrema_label = tk.Label(
-            self.bottom_panel_frame,
+            self.equations_frame,
             text=self.not_found_y_extrema_label_text,
-            width=25,
             anchor=tk.W,
         )
         self.substitute_extrema_button = tk.Button(
@@ -243,7 +205,7 @@ class MainFrame(tk.Frame):
 
         self.show_dashed_line_checkbutton = tk.Checkbutton(
             self.curve_show_toggle_options_frame,
-            text="Show Dashed Line",
+            text="Show Dash. Line",
             variable=self.show_dashed_line_var,
             onvalue=1,
             offvalue=0,
@@ -255,7 +217,7 @@ class MainFrame(tk.Frame):
 
         self.show_extremum_points_checkbutton = tk.Checkbutton(
             self.curve_show_toggle_options_frame,
-            text="Show Extremum Points",
+            text="Show Extr. Pts",
             variable=self.show_extremum_points_var,
             onvalue=1,
             offvalue=0,
@@ -263,25 +225,27 @@ class MainFrame(tk.Frame):
             state=tk.DISABLED,
         )
 
-        self.image_manager = ImageManager(self.canvas, CANVAS_SIZE)
+        self.image_manager = ImageManager(self.canvas)
 
         self.import_image_button = tk.Button(
             self.image_options_frame,
             text="Import Image",
             command=self.image_manager.import_image,
+            width=self.side_panel_width,
         )
 
         self.remove_image_button = tk.Button(
             self.image_options_frame,
             text="Remove Image",
             command=self.image_manager.remove_image,
+            width=self.side_panel_width,
         )
 
         self.show_bounding_box_var: tk.IntVar = tk.IntVar(value=0)
 
         self.show_bounding_box_checkbutton = tk.Checkbutton(
             self.curve_show_toggle_options_frame,
-            text="Show Bounding Box",
+            text="Show B. Box",
             variable=self.show_bounding_box_var,
             onvalue=1,
             offvalue=0,
@@ -297,7 +261,9 @@ class MainFrame(tk.Frame):
         )
 
         self.projects_listbox = tk.Listbox(
-            self.saving_management_frame, width=self.side_panel_listbox_width
+            self.saving_management_frame,
+            width=self.side_panel_listbox_width,
+            height=25,
         )
 
         self.save_info_label = tk.Label(self.saving_management_frame)
@@ -345,9 +311,7 @@ class MainFrame(tk.Frame):
     # Define function that executes every time user selects a different curve
     def handle_curve_select(self, event) -> None:
         if len(self.curves_listbox.curselection()) > 0:
-            self.selected_curve = self.curves[
-                self.curves_listbox.curselection()[0]
-            ]  # we can use only the first one selected because only one can be selected
+            self.selected_curve = self.curves[self.curves_listbox.curselection()[0]]
 
             self.selected_curve.raise_curve_widgets(self.canvas)
 
@@ -369,10 +333,6 @@ class MainFrame(tk.Frame):
                     else:
                         self.canvas.itemconfig(curve.dashed_line, state=tk.HIDDEN)
 
-            self.curve_width_slider.config(state=tk.NORMAL)
-
-            self.curve_width_controller.set(value=self.selected_curve.width)
-
             self.display_curve_equations()
 
             self.display_curve_extrema()
@@ -380,14 +340,6 @@ class MainFrame(tk.Frame):
             self.selected_curve.substituted_extremum = None
 
             self.selected_curve.substitute_extremum_for_t(self.canvas)
-
-            self.curve_color_changer.indicator.config(bg=self.selected_curve.color)
-            self.endpoints_color_changer.indicator.config(
-                bg=self.selected_curve.endpoints_color
-            )
-            self.control_points_color_changer.indicator.config(
-                bg=self.selected_curve.control_points_color
-            )
 
             self.show_dashed_line_checkbutton.config(state=tk.NORMAL)
 
@@ -402,6 +354,8 @@ class MainFrame(tk.Frame):
             self.show_bounding_box_checkbutton.config(state=tk.NORMAL)
 
             self.show_bounding_box_var.set(self.selected_curve.bounding_box_visible)
+
+            self.curve_color_changer.force_change_color(self.selected_curve.color)
 
     def get_selected_curve(self) -> BezierCurve | None:
         return self.selected_curve
@@ -426,10 +380,19 @@ class MainFrame(tk.Frame):
     def new_curve(
         self, amount_of_points: int, points_list: List[P] | None = None
     ) -> None:
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+
         new_points = None
 
         if points_list is None:
-            new_points = self.new_canvas_points(points_default_pos[amount_of_points])
+            new_points = self.new_canvas_points(
+                get_points_default_pos(
+                    amount_of_points,
+                    canvas_width,
+                    canvas_height,
+                )
+            )
         else:
             new_points = self.new_canvas_points(points_list)
 
@@ -444,8 +407,7 @@ class MainFrame(tk.Frame):
         new_curve = BezierCurve(
             name=new_curve_name,
             points=new_points,
-            width=DEFAULT_CURVE_WIDTH,
-            canvas_height=CANVAS_WIDTH,
+            canvas_height=canvas_width,
         )
 
         self.curves.append(new_curve)
@@ -457,7 +419,7 @@ class MainFrame(tk.Frame):
 
         self.curves_listbox.insert(tk.END, new_curve_name)
 
-        # Because the new added curve is not automatically selected, we can immediately hide its points
+        # Because the newly added curve is not automatically selected, we can immediately hide its points
         for point in new_curve.points:
             self.canvas.itemconfig(point.point, state=tk.HIDDEN)
         for point in new_curve.extremum_points:
@@ -501,26 +463,15 @@ class MainFrame(tk.Frame):
             if curve_to_be_deleted.bounding_box_canvas_line is not None:
                 self.canvas.delete(curve_to_be_deleted.bounding_box_canvas_line)
 
-            self.curves.pop(
-                curve_index_to_be_deleted
-            )  # we can pop only the first one selected because only one can be selected
+            self.curves.pop(curve_index_to_be_deleted)
 
             self.curves_listbox.delete(self.curves_listbox.curselection())
 
             # Revert every widget to default
-            self.curve_width_controller.set(value=DEFAULT_CURVE_WIDTH)
-
-            self.curve_width_slider.config(state=tk.DISABLED)
 
             self.display_curve_equations()
 
             self.display_curve_extrema()
-
-            self.curve_color_changer.indicator.config(bg=DEFAULT_CURVE_COLOR)
-            self.endpoints_color_changer.indicator.config(bg=DEFAULT_ENDPOINT_COLOR)
-            self.control_points_color_changer.indicator.config(
-                bg=DEFAULT_CONTROL_POINT_COLOR
-            )
 
             self.show_dashed_line_var.set(value=1)
 
@@ -533,6 +484,8 @@ class MainFrame(tk.Frame):
             self.show_bounding_box_var.set(value=0)
 
             self.show_bounding_box_checkbutton.config(state=tk.DISABLED)
+
+            self.curve_color_changer.revert_original_color()
 
     # Handle mouse events
     def handle_click(self, event) -> None:
@@ -564,14 +517,17 @@ class MainFrame(tk.Frame):
             )
 
             # Ensure that the point doesn't get out of bounds
+            canvas_width = self.canvas.winfo_width()
+            canvas_height = self.canvas.winfo_height()
+
             if (self.selected_point.point_coords[0] + dx) < 0:
                 dx = -self.selected_point.point_coords[0]
-            elif (self.selected_point.point_coords[0] + dx) > CANVAS_WIDTH:
-                dx = CANVAS_WIDTH - self.selected_point.point_coords[0]
+            elif (self.selected_point.point_coords[0] + dx) > canvas_width:
+                dx = canvas_width - self.selected_point.point_coords[0]
             if (self.selected_point.point_coords[1] + dy) < 0:
                 dy = -self.selected_point.point_coords[1]
-            elif (self.selected_point.point_coords[1] + dy) > CANVAS_HEIGHT:
-                dy = CANVAS_HEIGHT - self.selected_point.point_coords[1]
+            elif (self.selected_point.point_coords[1] + dy) > canvas_height:
+                dy = canvas_height - self.selected_point.point_coords[1]
 
             self.canvas.move(self.selected_point.point, dx, dy)
 
@@ -604,11 +560,6 @@ class MainFrame(tk.Frame):
         if self.selected_curve is not None:
             self.selected_curve.y_extremum_points_color = new_color
             self.selected_curve.draw(self.canvas)
-
-    def change_curve_width(self, x: str) -> None:
-        if self.selected_curve is not None:
-            new_width = self.curve_width_controller.get()
-            self.selected_curve.change_curve_width(self.canvas, new_width)
 
     def update_equation_texts(self, new_text: Tuple[str, str] | None) -> None:
         # Make the texts accesible for the program
@@ -723,7 +674,11 @@ class MainFrame(tk.Frame):
 
     def reset_points(self) -> None:
         if self.selected_curve is not None:
-            new_points_pos = points_default_pos[len(self.selected_curve.points)]
+            new_points_pos = get_points_default_pos(
+                len(self.selected_curve.points),
+                self.canvas.winfo_width(),
+                self.canvas.winfo_height(),
+            )
 
             for i in range(len(self.selected_curve.points)):
                 dx, dy = (
@@ -776,118 +731,77 @@ class MainFrame(tk.Frame):
 
     def grid_widgets(self) -> None:
         # MAIN GRID
-        self.canvas_frame.grid(column=1, row=0, sticky=tk.NW)
-        self.curves_management_frame.grid(column=2, row=0, rowspan=2, sticky=tk.NW)
-        self.bottom_panel_frame.grid(column=1, row=1, sticky=tk.NW)
-        self.saving_management_frame.grid(column=0, row=0, rowspan=2, sticky=tk.NW)
+        self.canvas_frame.grid(
+            column=1,
+            row=0,
+            sticky=tk.NSEW,
+            padx=self.widget_padding,
+            pady=self.widget_padding,
+        )
+        self.right_panel_frame.grid(
+            column=2, row=0, rowspan=2, sticky=tk.NS, padx=(0, self.widget_padding)
+        )
+        self.bottom_panel_frame.grid(
+            column=1, row=1, sticky=tk.SW, pady=self.widget_padding
+        )
+        self.left_panel_frame.grid(
+            column=0, row=0, rowspan=2, sticky=tk.NS, padx=(self.widget_padding, 0)
+        )
 
         # FRAMES' CHILD FRAMES GRID
-        self.curve_appearance_frame.grid(column=0, row=6, sticky=tk.W)
-        self.curve_equations_options_frame.grid(column=0, row=2)
-        self.curve_show_toggle_options_frame.grid(
-            column=1, row=2, padx=32 * self.widget_padding
+        self.equations_frame.grid(column=0, row=0, pady=(0, self.widget_padding))
+        self.curve_appearance_frame.grid(
+            column=0, row=1, sticky=tk.S, pady=self.widget_padding
         )
-        self.image_options_frame.grid(column=2, row=2)
+        self.curve_equations_options_frame.grid(column=0, row=1, sticky=tk.W)
+        self.curve_show_toggle_options_frame.grid(
+            column=1, row=1, padx=self.widget_padding, sticky=tk.E
+        )
+        self.saving_management_frame.grid(column=0, row=0, sticky=tk.N)
+        self.image_options_frame.grid(
+            column=0, row=1, sticky=tk.S, pady=self.widget_padding
+        )
+        self.curves_management_frame.grid(column=0, row=0, sticky=tk.N)
 
         # Canvas frame grid
         self.canvas.grid(
-            column=0, row=0, padx=self.widget_padding, pady=self.widget_padding
+            column=0,
+            row=0,
+            sticky=tk.NSEW,
         )
 
-        # Side panel frame grid
-        right_panel_padding = (self.widget_padding, 2 * self.widget_padding)
-
+        # Right panel frame grid
         self.curves_listbox.grid(
-            column=0, row=0, padx=right_panel_padding, pady=self.widget_padding
+            column=0,
+            row=0,
+            pady=self.widget_padding,
+            sticky=tk.E,
         )
 
-        self.new_linear_button.grid(
-            column=0, row=1, padx=right_panel_padding, pady=self.widget_padding
-        )
-        self.new_quadratic_button.grid(column=0, row=2, padx=right_panel_padding)
-        self.new_cubic_button.grid(
-            column=0, row=3, padx=right_panel_padding, pady=self.widget_padding
-        )
-        self.delete_curve_button.grid(column=0, row=4, padx=right_panel_padding)
-        self.reset_points_button.grid(
-            column=0, row=5, padx=right_panel_padding, pady=self.widget_padding
-        )
-
-        # Curve appearance frame grid
-        self.curve_width_label.grid(
-            column=0, row=0, columnspan=2, padx=right_panel_padding, sticky=tk.W
-        )
-        self.curve_width_slider.grid(
-            column=0, row=1, columnspan=2, padx=right_panel_padding, sticky=tk.W
-        )
+        self.new_linear_button.grid(column=0, row=1, pady=self.widget_padding)
+        self.new_quadratic_button.grid(column=0, row=2)
+        self.new_cubic_button.grid(column=0, row=3, pady=self.widget_padding)
+        self.delete_curve_button.grid(column=0, row=4)
+        self.reset_points_button.grid(column=0, row=5, pady=self.widget_padding)
 
         self.curve_color_changer.label.grid(
             column=0,
-            row=2,
-            padx=right_panel_padding,
-            pady=self.widget_padding,
-            sticky=tk.W,
+            row=0,
         )
         self.curve_color_changer.button.grid(
-            column=1, row=2, padx=right_panel_padding, pady=self.widget_padding
+            column=1,
+            row=0,
         )
         self.curve_color_changer.indicator.grid(
-            column=1, row=2, padx=right_panel_padding, pady=self.widget_padding
-        )
-
-        self.endpoints_color_changer.label.grid(
-            column=0, row=3, padx=right_panel_padding, sticky=tk.W
-        )
-        self.endpoints_color_changer.button.grid(
-            column=1, row=3, padx=right_panel_padding
-        )
-        self.endpoints_color_changer.indicator.grid(
-            column=1, row=3, padx=right_panel_padding
-        )
-
-        self.control_points_color_changer.label.grid(
-            column=0,
-            row=4,
-            padx=right_panel_padding,
-            pady=self.widget_padding,
-            sticky=tk.W,
-        )
-        self.control_points_color_changer.button.grid(
-            column=1, row=4, padx=right_panel_padding, pady=self.widget_padding
-        )
-        self.control_points_color_changer.indicator.grid(
-            column=1, row=4, padx=right_panel_padding, pady=self.widget_padding
-        )
-
-        self.x_extremum_points_color_changer.label.grid(
-            column=0, row=5, padx=right_panel_padding, sticky=tk.W
-        )
-        self.x_extremum_points_color_changer.button.grid(
-            column=1, row=5, padx=right_panel_padding
-        )
-        self.x_extremum_points_color_changer.indicator.grid(
-            column=1, row=5, padx=right_panel_padding
-        )
-
-        self.y_extremum_points_color_changer.label.grid(
-            column=0,
-            row=6,
-            padx=right_panel_padding,
-            pady=self.widget_padding,
-            sticky=tk.W,
-        )
-        self.y_extremum_points_color_changer.button.grid(
-            column=1, row=6, padx=right_panel_padding, pady=self.widget_padding
-        )
-        self.y_extremum_points_color_changer.indicator.grid(
-            column=1, row=6, padx=right_panel_padding, pady=self.widget_padding
+            column=1,
+            row=0,
         )
 
         # Bottom panel frame grid
         self.x_equation_text.grid(
             column=0,
             row=0,
-            columnspan=2,
+            columnspan=1,
             padx=self.widget_padding,
             pady=self.widget_padding,
             sticky=tk.W,
@@ -895,7 +809,7 @@ class MainFrame(tk.Frame):
         self.y_equation_text.grid(
             column=0,
             row=1,
-            columnspan=2,
+            columnspan=1,
             padx=self.widget_padding,
             pady=self.widget_padding,
             sticky=tk.W,
@@ -904,29 +818,24 @@ class MainFrame(tk.Frame):
             column=1, row=0, pady=self.widget_padding, sticky=tk.E
         )
         self.y_extrema_label.grid(
-            column=1, row=1, pady=self.widget_padding, sticky=tk.E
+            column=1, row=1, pady=self.widget_padding, sticky=tk.W
         )
 
-        # Curve + image options frame grid
-        self.copy_equations_button.grid(column=0, row=0, sticky=tk.W)
+        self.copy_equations_button.grid(
+            column=0,
+            row=0,
+        )
         self.substitute_extrema_button.grid(column=1, row=0, padx=self.widget_padding)
 
         self.show_dashed_line_checkbutton.grid(column=0, row=0)
         self.show_extremum_points_checkbutton.grid(column=1, row=0)
         self.show_bounding_box_checkbutton.grid(column=2, row=0)
 
-        self.import_image_button.grid(
-            column=0, row=0, padx=self.widget_padding, pady=self.widget_padding
-        )
-        self.remove_image_button.grid(column=1, row=0)
-
-        # Saving & loading management grid
+        # Left panel frame grid
         left_panel_padding = (2 * self.widget_padding, self.widget_padding)
 
-        self.projects_listbox.grid(
-            column=0, row=0, padx=left_panel_padding, pady=self.widget_padding
-        )
-        self.save_project_button.grid(column=0, row=1, padx=left_panel_padding)
+        self.projects_listbox.grid(column=0, row=0, pady=self.widget_padding)
+        self.save_project_button.grid(column=0, row=1)
         self.save_as_label.grid(
             column=0,
             row=2,
@@ -934,20 +843,52 @@ class MainFrame(tk.Frame):
             pady=self.widget_padding,
             sticky=tk.W,
         )
-        self.save_as_entry.grid(column=0, row=3, padx=left_panel_padding)
-        self.save_info_label.grid(
-            column=0, row=4, padx=left_panel_padding, pady=self.widget_padding
+        self.save_as_entry.grid(column=0, row=3)
+        self.save_info_label.grid(column=0, row=4, pady=self.widget_padding)
+        self.load_project_button.grid(column=0, row=5)
+        self.delete_project_button.grid(column=0, row=6, pady=self.widget_padding)
+
+        self.import_image_button.grid(
+            column=0, row=0, padx=self.widget_padding, pady=self.widget_padding
         )
-        self.load_project_button.grid(column=0, row=5, padx=left_panel_padding)
-        self.delete_project_button.grid(
-            column=0, row=6, padx=left_panel_padding, pady=self.widget_padding
-        )
+        self.remove_image_button.grid(column=0, row=1)
+
+        # Configure weights
+
+        self.grid_columnconfigure(1, weight=5)
+
+        self.grid_rowconfigure(0, weight=1)
+
+        self.canvas_frame.grid_columnconfigure(0, weight=1)
+
+        self.canvas_frame.grid_rowconfigure(0, weight=1)
+
+        self.bottom_panel_frame.grid_columnconfigure(0, weight=1)
+
+        self.bottom_panel_frame.grid_rowconfigure(0, weight=1)
+        self.bottom_panel_frame.grid_rowconfigure(1, weight=1)
+        self.bottom_panel_frame.grid_rowconfigure(2, weight=1)
+
+        self.equations_frame.grid_columnconfigure(0, weight=1)
+
+        self.equations_frame.grid_rowconfigure(0, weight=1)
+        self.equations_frame.grid_rowconfigure(1, weight=1)
+
+        self.left_panel_frame.grid_rowconfigure(0, weight=1)
+        self.left_panel_frame.grid_rowconfigure(1, weight=1)
+
+        self.saving_management_frame.grid_rowconfigure(0, weight=1)
+
+        self.right_panel_frame.grid_rowconfigure(0, weight=1)
+        self.right_panel_frame.grid_rowconfigure(1, weight=1)
+
+        self.curves_management_frame.grid_rowconfigure(0, weight=1)
 
 
 class App(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("Bezierve 2.0 Pre-Release")
+        self.title("Bezierve v2")
         self.iconbitmap(absolute_path_to_icon)
         self.wm_state("zoomed")
         self.create_widgets()
@@ -955,7 +896,9 @@ class App(tk.Tk):
     def create_widgets(self) -> None:
         frame = MainFrame(self)
         frame.grid_widgets()
-        frame.grid(column=0, row=0)
+        frame.grid(column=0, row=0, sticky=tk.NSEW)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
 
 if __name__ == "__main__":
