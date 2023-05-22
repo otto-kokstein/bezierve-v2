@@ -29,6 +29,50 @@ curve_names: Dict[int, str] = {
 }
 
 
+def get_points_default_pos(
+    amount_of_points: int, canvas_width: int, canvas_height: int
+) -> List[P]:
+    half_canvas_width = round(canvas_width / 2)
+
+    half_canvas_height = round(canvas_height / 2)
+    quarter_canvas_height = round(canvas_height / 4)
+    twelfth_canvas_height = round(canvas_height / 12)
+
+    points: List[P] = []
+
+    if amount_of_points == 2:
+        points.extend(
+            [
+                (half_canvas_width, quarter_canvas_height),
+                (half_canvas_width, quarter_canvas_height * 3),
+            ]
+        )
+
+    elif amount_of_points == 3:
+        points.extend(
+            [
+                (half_canvas_width, quarter_canvas_height),
+                (half_canvas_width, half_canvas_height),
+                (half_canvas_width, quarter_canvas_height * 3),
+            ]
+        )
+
+    elif amount_of_points == 4:
+        points.extend(
+            [
+                (half_canvas_width, quarter_canvas_height),
+                (half_canvas_width, twelfth_canvas_height * 5),
+                (half_canvas_width, twelfth_canvas_height * 7),
+                (half_canvas_width, quarter_canvas_height * 3),
+            ]
+        )
+
+    else:
+        raise InvalidPointAmoundError
+
+    return points
+
+
 class BezierCurve:
     def __init__(
         self,

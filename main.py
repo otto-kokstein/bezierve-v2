@@ -10,9 +10,9 @@ from bezier_curve import (
     DEFAULT_X_EXTREMUM_COLOR,
     DEFAULT_Y_EXTREMUM_COLOR,
     curve_names,
-    InvalidPointAmoundError,
+    get_points_default_pos,
 )
-from canvas_point import P, CanvasPoint, DEFAULT_POINT_DIAMETER
+from canvas_point import P, CanvasPoint
 import projects_manager
 from image_manager import ImageManager
 from color_changer import ColorChanger
@@ -20,50 +20,6 @@ from color_changer import ColorChanger
 
 # Obtain path to icon
 absolute_path_to_icon = str(Path(root_path, "./bezierve_icon_2.ico").resolve())
-
-
-def get_points_default_pos(
-    amount_of_points: int, canvas_width: int, canvas_height: int
-) -> List[P]:
-    half_canvas_width = round(canvas_width / 2)
-
-    half_canvas_height = round(canvas_height / 2)
-    quarter_canvas_height = round(canvas_height / 4)
-    twelfth_canvas_height = round(canvas_height / 12)
-
-    points: List[P] = []
-
-    if amount_of_points == 2:
-        points.extend(
-            [
-                (half_canvas_width, quarter_canvas_height),
-                (half_canvas_width, quarter_canvas_height * 3),
-            ]
-        )
-
-    elif amount_of_points == 3:
-        points.extend(
-            [
-                (half_canvas_width, quarter_canvas_height),
-                (half_canvas_width, half_canvas_height),
-                (half_canvas_width, quarter_canvas_height * 3),
-            ]
-        )
-
-    elif amount_of_points == 4:
-        points.extend(
-            [
-                (half_canvas_width, quarter_canvas_height),
-                (half_canvas_width, twelfth_canvas_height * 5),
-                (half_canvas_width, twelfth_canvas_height * 7),
-                (half_canvas_width, quarter_canvas_height * 3),
-            ]
-        )
-
-    else:
-        raise InvalidPointAmoundError
-
-    return points
 
 
 class MainFrame(tk.Frame):
