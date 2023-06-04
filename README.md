@@ -2,7 +2,7 @@
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-A Tkinter application for Bézier curves read off.
+A Tkinter application for Bézier curve read off.
 
 It allows the user to create linear, quadratic and cubic Bézier curves, find their extrema and their bounding box and import images.
 Its main promise is to provide users with the equations needed to create a Bézier curve. This is done by importing an image with the desired Bézier curve, creating one in the application and "shaping" it to look like the curve in the image, after which they can simple copy the equations as a tuple.
